@@ -93,7 +93,8 @@ func index(w http.ResponseWriter, r *http.Request) {
 	// 1-11. UserInfoエンドポイントから取得するscopeを指定
 	q.Set("scope", "openid email")
 	// 1-12. ログイン画面と同意画面の強制表示
-	q.Set("prompt", "login consent")
+	q.Set("prompt", "consent")
+	//q.Set("prompt", "login consent")
 	// 4-3. セッションCookieに紐づけたstate値を指定
 	q.Set("state", state)
 	// 5-2. セッションCookieに紐づけたnonce値を指定

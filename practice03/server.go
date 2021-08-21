@@ -72,8 +72,9 @@ func index(w http.ResponseWriter, r *http.Request) {
 	q.Set("redirect_uri", config.RedirectURI)
 	// 1-11. UserInfoエンドポイントから取得するscopeを指定
 	q.Set("scope", "openid email")
-	// 1-12. ログイン画面と同意画面の強制表示
-	q.Set("prompt", "login consent")
+	// 1-12. ログイン画面と同意画面の強制表示(２度目以降キャッシュされるので、強制的にログインさせたい場合、強制的に同意画面を表示させたい場合)
+	q.Set("prompt", "consent")
+	//q.Set("prompt", "login consent")
 	// 4-3. セッションCookieに紐づけたstate値を指定
 
 	// 5-2. セッションCookieに紐づけたnonce値を指定
@@ -105,6 +106,7 @@ type TokenResponse struct {
 // Access Tokenの取得、ID Tokenの取得と検証
 // UserInfoエンドポイントからユーザー属性情報の取得
 func callback(w http.ResponseWriter, r *http.Request) {
+	log.Println("[[ callback started ]]")
 	// 2-1. クエリを取得
 	query := r.URL.Query()
 
@@ -122,6 +124,7 @@ func callback(w http.ResponseWriter, r *http.Request) {
 	values.Add("redirect_uri", config.RedirectURI)
 	// 2-3. redirect_uriからAuthorization Codeを抽出
 	values.Add("code", query["code"][0])
+	log.Printf("code = %s", query["code"][0])
 	tokenResponse, err := http.Post(config.OIDCURL+"/yconnect/v2/token",
 		"application/x-www-form-urlencoded",
 		strings.NewReader(values.Encode()))

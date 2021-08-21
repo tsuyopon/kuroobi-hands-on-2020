@@ -1,3 +1,6 @@
+/*
+ * authorizationエントリポイントへのアクセス
+ */
 package main
 
 import (
@@ -69,7 +72,10 @@ func index(w http.ResponseWriter, r *http.Request) {
 	// 1-11. UserInfoエンドポイントから取得するscopeを指定
 	q.Set("scope", "openid email")
 	// 1-12. ログイン画面と同意画面の強制表示
-	q.Set("prompt", "login consent")
+	// あまり何度もログインしていると「xxxxの確認コードの送信、または確認コードの入力間違いが一定回数を超えましたので、時間をおいてから再度お試しください。」と表示されるのでloginパラメータは控える
+	q.Set("prompt", "consent")
+	//q.Set("prompt", "login consent")
+
 	// 4-3. セッションCookieに紐づけたstate値を指定
 
 	// 5-2. セッションCookieに紐づけたnonce値を指定
