@@ -16,6 +16,7 @@ import (
 	"math/big"
 	"math/rand"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"path"
 	"strings"
@@ -105,8 +106,8 @@ func index(w http.ResponseWriter, r *http.Request) {
 	q.Set("response_type", "code")
 	q.Set("client_id", config.ClientID)
 	q.Set("redirect_uri", config.RedirectURI)
-	// 1-11. UserInfoエンドポイントから取得するscopeを指定
-	q.Set("scope", "openid email")
+	// 1-11. UserInfoエンドポイントから取得するscopeを指定 (参考: https://developer.yahoo.co.jp/yconnect/v2/userinfo.html )
+	q.Set("scope", "openid email profile address")
 	// 1-12. ログイン画面と同意画面の強制表示
 	q.Set("prompt", "login consent")
 	// 4-3. セッションCookieに紐づけたstate値を指定
@@ -210,9 +211,22 @@ func callback(w http.ResponseWriter, r *http.Request) {
 	values.Add("redirect_uri", config.RedirectURI)
 	// 2-3. redirect_uriからAuthorization Codeを抽出
 	values.Add("code", query["code"][0])
+
 	tokenResponse, err := http.Post(config.OIDCURL+"/yconnect/v2/token",
 		"application/x-www-form-urlencoded",
 		strings.NewReader(values.Encode()))
+
+	log.Println("############ Dump /yconnect/v2/token ############")
+
+	// リクエストのダンプ (FIXME: ボディ情報のデバッグができてないのでいずれ対応したい)
+	dump, _ := httputil.DumpRequest(tokenResponse.Request, true)
+	fmt.Println(string(dump))
+	//fmt.Println(strings.NewReader(values.Encode()))
+
+
+	// レスポンスのダンプ
+	dumpResp, _ := httputil.DumpResponse(tokenResponse, true)
+	fmt.Printf("%s", dumpResp)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -279,6 +293,15 @@ func callback(w http.ResponseWriter, r *http.Request) {
 
 	// 5-9. JWKsリクエスト
 	jwksResponse, err := http.Get(config.OIDCURL + "/yconnect/v2/jwks")
+
+	log.Println("############ Dump /yconnect/v2/jwks ############")
+	// リクエストのダンプ
+	dump_jwks, _ := httputil.DumpRequest(jwksResponse.Request, true)
+	fmt.Println(string(dump_jwks))
+	// レスポンスのダンプ
+	dumpResp_jwks, _ := httputil.DumpResponse(jwksResponse, true)
+	fmt.Printf("%s", dumpResp_jwks)
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		errorTemplate.Execute(w, "failed to get jwk")
@@ -496,7 +519,19 @@ func callback(w http.ResponseWriter, r *http.Request) {
 	}
 	userInfoRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	userInfoRequest.Header.Set("Authorization", "Bearer "+tokenData.AccessToken)
+
+	log.Println("############ Dump /yconnect/v2/attribute ############")
+
+	// リクエストのダンプ
+	dump_attr, _ := httputil.DumpRequestOut(userInfoRequest, true)
+	fmt.Printf("%s", dump_attr)
+
 	userInfoResponse, err := http.DefaultClient.Do(userInfoRequest)
+
+	// レスポンスのダンプ
+	dumpResp_attr, _ := httputil.DumpResponse(userInfoResponse, true)
+	fmt.Printf("%s", dumpResp_attr)
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		errorTemplate.Execute(w, "failed to user attribute request")
